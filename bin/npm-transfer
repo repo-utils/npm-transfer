@@ -1,0 +1,20 @@
+#!/usr/bin/env node
+
+var program = require('commander')
+  .version(require('../package.json').version)
+  .usage('<user>')
+  .parse(process.argv)
+
+var user = program.args[0]
+if (!user) throw new Error('an npm user must be set')
+console.log('transferring npm publishing rights to "%s"', user)
+
+var exec = require('child_process').execFileSync
+var me = exec('npm', ['whoami']).toString().trim()
+var packages = exec('curl', ['-s', 'http://registry.npmjs.org/-/by-user/' + me])
+packages = JSON.parse(packages.toString())[me]
+
+packages.forEach(function (package) {
+  exec('npm', ['owner', 'add', user, package])
+  console.log('package "%s" has been transferred', package)
+})
