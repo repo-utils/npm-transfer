@@ -11,7 +11,7 @@
   "license": "MIT",
   "repository": "repo-utils/npm-transfer",
   "dependencies": {
-    "commander": "1"
+    "commander": "2.9.0"
   },
   "keywords": [
     "npm",
