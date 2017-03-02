@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+var yesno = require("yesno")
+
 var program = require('commander')
   .version(require('../package.json').version)
   .usage('<user>')
@@ -7,14 +9,28 @@ var program = require('commander')
 
 var user = program.args[0]
 if (!user) throw new Error('an npm user must be set')
-console.log('transferring npm publishing rights to "%s"', user)
 
 var exec = require('child_process').execFileSync
 var me = exec('npm', ['whoami']).toString().trim()
-var packages = exec('curl', ['-s', 'http://registry.npmjs.org/-/by-user/' + me])
-packages = JSON.parse(packages.toString())[me]
+var packages = program.args.slice(1)
+if (packages.length <= 0) {
+  packages = exec('curl', ['-s', 'https://registry.cnpmjs.org/-/by-user/' + me])
+  packages = JSON.parse(packages.toString())[me]
+}
 
-packages.forEach(function (package) {
-  exec('npm', ['owner', 'add', user, package])
-  console.log('package "%s" has been transferred', package)
-})
+(function npm_transfer (modules) {
+  if (modules.length <= 0) {
+    process.exit(0)
+  } else {
+    var package = modules[0]
+    yesno.ask('transfer npm publishing rights of "'+package+'" from user "'+me+'" to user "'+user+'"?',
+      false,
+      function (ok) {
+        if (ok) {
+          exec('npm', ['owner', 'add', user, package])
+          console.log('package "%s" has been transferred from user "%s" to "%s"', package, me, user)
+        }
+        npm_transfer(modules.slice(1))
+      })
+  }
+})(packages)
